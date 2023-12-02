@@ -23,7 +23,7 @@ ifeq ($(dbg2), 1)
 endif
 
 runstats : day${DAY}.run
-	@rm massif.out.*
+	@rm -f massif.out.*
 	@valgrind --tool=massif --stacks=yes ./day${DAY}.run "p1" < inputs/day${DAY}.in
 	@mv massif.out.* day${DAY}.p1.stat
 	@valgrind --tool=massif --stacks=yes ./day${DAY}.run "p2" < inputs/day${DAY}.in
