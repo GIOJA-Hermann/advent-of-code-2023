@@ -1,13 +1,12 @@
 #include "common.h"
 
-const char* _ = "0123456789";
 const char* _c[10] = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"};
 
 void getFromDigit(char *s, int *idx1, int *idx2, int *n1, int *n2) {
     int idx = -1;
     *idx1 = INT_MAX;
     *idx2 = -1;
-    while ((idx += strcspn(&s[++idx], _)) < strlen(s)) {
+    while ((idx += strcspn(&s[++idx], digit)) < strlen(s)) {
         *idx1 = (idx < *idx1)? idx : *idx1;
         *idx2 = (idx > *idx2)? idx : *idx2;
     }

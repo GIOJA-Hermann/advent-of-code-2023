@@ -33,7 +33,7 @@ run : day${DAY}.run
 	@./day${DAY}.run "p1" < inputs/day${DAY}.in
 	@./day${DAY}.run "p2" < inputs/day${DAY}.in
 
-%.run : obj/%.o obj/main.o
+%.run : obj/%.o obj/main.o obj/common.o obj/mempool.o
 	@gcc -o $@ $^
 
 obj/%.o: %.c

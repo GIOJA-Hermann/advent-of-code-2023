@@ -3,8 +3,9 @@
 #include <string.h>
 #include <inttypes.h>
 #include <limits.h>
+#include <ctype.h>
 #include "debug.h"
 
-static inline int ctoi(char c) {
-    return c - '0';
-}
+extern const char *digit;
+
+int ctoi(char c);
