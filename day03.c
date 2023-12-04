@@ -17,17 +17,6 @@ struct s_number {
     t_number *next;
 };
 
-char * rl(char *s, uint32_t bs) {
-
-    if (!fgets(s, bs, stdin)) {
-        free (s);
-        s = NULL;
-    } else {
-        strtok(s, "\n\r");
-    }
-    return s;
-}
-
 void verifySymbol(char *wholedata, t_number *cur, size_t checkIdx) {
     if (wholedata[checkIdx] != '.' && !isdigit(wholedata[checkIdx])) {
         if (cur->nsymb == _maxSymb) {
@@ -116,6 +105,6 @@ void day(const char *part) {
             }
         }
     }
-
+    throwPool(&mp);
     printf("%ld\n", total);
 }

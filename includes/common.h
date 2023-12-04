@@ -7,5 +7,7 @@
 #include "debug.h"
 
 extern const char *digit;
+const size_t _bufsize;
 
 int ctoi(char c);
+char * rl(char *s, uint32_t bs);

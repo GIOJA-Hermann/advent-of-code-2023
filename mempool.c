@@ -1,20 +1,45 @@
 #include "mempool.h"
+#include <sys/mman.h>
+#include <stdio.h>
 
-void initPool(t_mempool *mp, uint32_t elemPerBlock, uint32_t elemSize) {
-    /* elemSize is forced aligned on 64b*/
-    *mp = (t_mempool){.elemBlocks = NULL, .elemPerBlock = elemPerBlock, .elemSize = ((elemSize + 7) / 8) << 3, .nbBlocksPtr = 0, .nbBlocks = 0, .nextIdx = 0};
+#define MP_SIZE_SHIFT 12
+#define MP_BLOCKS_INC 64
+
+void initPool(t_mempool *mp, uint32_t sizeFactor, uint32_t elemSize) {
+    /* elemSize is forced aligned on 64b and >= 1 ptr */
+    elemSize = (elemSize > sizeof(void*)) ? elemSize : sizeof(void*);
+    *mp = (t_mempool){.elemBlocks = NULL, .elemSize = ((elemSize + 7) / 8) << 3, .nbBlocksPtr = 0, .nbBlocks = 0, .lastAddr = NULL, .nextAddr = NULL, .blockSize = (sizeFactor << MP_SIZE_SHIFT) * elemSize, .recycleBin = NULL};
 }
 
 void *getElem(t_mempool *mp) {
-    if (mp->nextIdx == (mp->nbBlocks * mp->elemPerBlock)) {
+    void* ret;
+    if (mp->recycleBin) {
+        ret = mp->recycleBin;
+        mp->recycleBin = mp->recycleBin->next;
+        return ret;
+    }
+    if (mp->nextAddr >= mp->lastAddr) {
         if (mp->nbBlocksPtr == mp->nbBlocks) {
-            mp->nbBlocksPtr += 100;
+            mp->nbBlocksPtr += MP_BLOCKS_INC;
             mp->elemBlocks = realloc(mp->elemBlocks, mp->nbBlocksPtr * mp->elemSize);
         }
-        mp->elemBlocks[mp->nbBlocks++] = malloc(mp->elemPerBlock * mp->elemSize);
+        mp->nextAddr = mp->elemBlocks[mp->nbBlocks++] = mmap ( NULL, mp->blockSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0 );
+        mp->lastAddr = mp->nextAddr + mp->blockSize;
     }
-    void* ret = (void*)(((char*)mp->elemBlocks[mp->nextIdx / mp->elemPerBlock]) + ((mp->nextIdx % mp->elemPerBlock) * mp->elemSize));
-    mp->nextIdx++;
+    ret = mp->nextAddr;
+    mp->nextAddr += mp->elemSize;
     return ret;
+}
+
+void recycle(t_mempool *mp, void *data) {
+    ((t_recycle *)data)->next = mp->recycleBin;
+    mp->recycleBin = (t_recycle *)data;
+}
+
+void throwPool(t_mempool *mp) {
+    for (size_t i = 0; i < mp->nbBlocks; i++) {
+        munmap(mp->elemBlocks[i], mp->blockSize);
+    }
+    free(mp->elemBlocks);
 }
 
