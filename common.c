@@ -13,7 +13,7 @@ char * rl(char *s, uint32_t bs) {
         free (s);
         s = NULL;
     } else {
-        strtok(s, "\n\r");
+        s[strlen(s)-2] = '\0';
     }
     return s;
 }
