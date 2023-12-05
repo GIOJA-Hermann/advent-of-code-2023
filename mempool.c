@@ -1,6 +1,7 @@
 #include "mempool.h"
 #include <sys/mman.h>
 #include <stdio.h>
+#include <string.h>
 
 #define MP_SIZE_SHIFT 12
 #define MP_BLOCKS_INC 64
@@ -22,8 +23,12 @@ void *getElem(t_mempool *mp) {
         if (mp->nbBlocksPtr == mp->nbBlocks) {
             mp->nbBlocksPtr += MP_BLOCKS_INC;
             mp->elemBlocks = realloc(mp->elemBlocks, mp->nbBlocksPtr * mp->elemSize);
+            memset(&mp->elemBlocks[mp->nbBlocksPtr - MP_BLOCKS_INC], 0, MP_BLOCKS_INC * sizeof(void *));
         }
-        mp->nextAddr = mp->elemBlocks[mp->nbBlocks++] = mmap ( NULL, mp->blockSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0 );
+        if (mp->elemBlocks[mp->nbBlocks] == NULL) {
+            mp->elemBlocks[mp->nbBlocks] = mmap ( NULL, mp->blockSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0 );
+        }
+        mp->nextAddr = mp->elemBlocks[mp->nbBlocks++];
         mp->lastAddr = mp->nextAddr + mp->blockSize;
     }
     ret = mp->nextAddr;
@@ -36,8 +41,17 @@ void recycle(t_mempool *mp, void *data) {
     mp->recycleBin = (t_recycle *)data;
 }
 
+void recycleAll(t_mempool *mp) {
+    mp->nbBlocks = 0;
+    mp->nextAddr = mp->elemBlocks[mp->nbBlocks];
+    mp->lastAddr = mp->nextAddr + mp->blockSize;
+    mp->recycleBin = NULL;
+}
+
 void throwPool(t_mempool *mp) {
-    for (size_t i = 0; i < mp->nbBlocks; i++) {
+    for (size_t i = 0; i < mp->nbBlocksPtr; i++) {
+        if (mp->elemBlocks[i] == NULL)
+            break;
         munmap(mp->elemBlocks[i], mp->blockSize);
     }
     free(mp->elemBlocks);

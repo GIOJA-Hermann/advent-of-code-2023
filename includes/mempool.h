@@ -24,4 +24,5 @@ struct s_mempool {
 void initPool(t_mempool *mp, uint32_t sizeFactor, uint32_t elemSize);
 void *getElem(t_mempool *mp);
 void recycle(t_mempool *mp, void *data);
+void recycleAll(t_mempool *mp);
 void throwPool(t_mempool *mp);
